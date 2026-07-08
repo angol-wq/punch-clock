@@ -1,17 +1,23 @@
 /**
  * Camera Module
  * Captures photos via <input capture="environment"> and resizes with canvas
+ * Handles iOS page reload by using sessionStorage recovery
  */
 
 const cameraInput = document.getElementById('camera-input');
 let cameraResolve = null;
 let cameraReject = null;
+let cameraTimeout = null;
 
 // Initialize camera listener
 cameraInput.addEventListener('change', async (e) => {
+  if (cameraTimeout) { clearTimeout(cameraTimeout); cameraTimeout = null; }
+
   const file = e.target.files[0];
   if (!file) {
-    if (cameraReject) cameraReject(new Error('未选择照片'));
+    if (cameraReject) {
+      cameraReject(new Error('未选择照片'));
+    }
     cameraResolve = null;
     cameraReject = null;
     return;
@@ -34,15 +40,46 @@ cameraInput.addEventListener('change', async (e) => {
 
 /**
  * Open camera to capture a photo
+ * Falls back gracefully if camera is unavailable
  * @returns {Promise<{photo: Blob, thumbnail: Blob}>}
  */
 function capturePhoto() {
   return new Promise((resolve, reject) => {
     cameraResolve = resolve;
     cameraReject = reject;
+
+    // On iOS, if camera causes page reload, this timeout may never fire.
+    // The sessionStorage 'pendingPhoto' flag handles recovery on reload.
+    cameraTimeout = setTimeout(() => {
+      if (cameraReject) {
+        cameraReject(new Error('相机超时'));
+        cameraResolve = null;
+        cameraReject = null;
+      }
+    }, 120000); // 2 minute timeout
+
     // Must be in DOM for iOS - ensure it's clickable
     cameraInput.click();
   });
+}
+
+/**
+ * Try to recover a pending photo operation after page reload
+ * Called on app init
+ */
+async function recoverPendingPhoto() {
+  const pending = sessionStorage.getItem('pendingPhoto');
+  if (!pending) return;
+
+  try {
+    const { id, type } = JSON.parse(pending);
+    // The record was already saved before camera opened.
+    // Just clear the pending flag — user can add photo later from history.
+    sessionStorage.removeItem('pendingPhoto');
+    console.log('Cleared pending photo for record:', id, type);
+  } catch (e) {
+    sessionStorage.removeItem('pendingPhoto');
+  }
 }
 
 /**

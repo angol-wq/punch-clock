@@ -66,6 +66,9 @@ async function initApp() {
     // Run migration if needed
     await migrateFromLocalStorage();
 
+    // Recover from any interrupted camera operation (iOS page reload)
+    await recoverPendingPhoto();
+
     // Set default settings if not exist
     const rate = await getSetting('hourlyRate');
     if (rate === null || rate === undefined) {
