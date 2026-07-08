@@ -3,7 +3,7 @@
  * Caches all app shell resources for offline use
  */
 
-const CACHE_NAME = 'punchclock-v1';
+const CACHE_NAME = 'punchclock-v2';
 
 const APP_SHELL = [
   './',
