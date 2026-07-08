@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>生成 PWA 图标</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 20px; text-align: center; }
+    canvas { border: 1px solid #ccc; margin: 10px; }
+    button { padding: 12px 24px; font-size: 16px; margin: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>PWA 图标生成器</h2>
+  <p>点击按钮生成并下载图标文件，然后将它们放入 <code>icons/</code> 文件夹</p>
+  <canvas id="c192" width="192" height="192"></canvas>
+  <canvas id="c512" width="512" height="512"></canvas>
+  <br>
+  <button onclick="downloadBoth()">📥 下载两个图标</button>
+
+  <script>
+    function drawIcon(canvas) {
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const cx = size / 2;
+      const cy = size / 2;
+      const r = size * 0.42;
+
+      // Background gradient
+      const bg = ctx.createLinearGradient(0, 0, 0, size);
+      bg.addColorStop(0, '#007aff');
+      bg.addColorStop(1, '#0056cc');
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, size * 0.22);
+      ctx.fill();
+
+      // White circle
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Clock circle outline
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = size * 0.04;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.82, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Clock hands
+      const handY = cy - r * 0.5;
+      const handX = cx + r * 0.35;
+
+      // Hour hand (shorter)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = size * 0.045;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx, handY);
+      ctx.stroke();
+
+      // Minute hand (longer, angled)
+      ctx.lineWidth = size * 0.035;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(handX, cy + r * 0.15);
+      ctx.stroke();
+
+      // Center dot
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.05, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Camera icon at bottom right of clock
+      const camX = cx + r * 0.5;
+      const camY = cy + r * 0.5;
+      const camW = size * 0.16;
+      const camH = size * 0.12;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(camX - camW/2, camY - camH/2 + camH*0.1, camW, camH);
+      ctx.beginPath();
+      ctx.arc(camX, camY, camH * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function downloadBoth() {
+      [192, 512].forEach(size => {
+        const canvas = document.getElementById('c' + size);
+        drawIcon(canvas);
+        canvas.toBlob(blob => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `icon-${size}.png`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }, 'image/png');
+      });
+    }
+
+    // Draw previews
+    drawIcon(document.getElementById('c192'));
+    drawIcon(document.getElementById('c512'));
+  </script>
+</body>
+</html>

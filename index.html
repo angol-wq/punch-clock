@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="私人打卡">
+  <meta name="theme-color" content="#007aff">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>私人打卡</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- App Shell -->
+  <div id="app">
+    <!-- Header -->
+    <header id="app-header">
+      <h1 id="header-title">私人打卡</h1>
+    </header>
+
+    <!-- Page: Dashboard -->
+    <main id="page-dashboard" class="page active">
+      <!-- Status Card -->
+      <div class="card status-card" id="status-card">
+        <div class="status-indicator" id="status-indicator">
+          <span class="status-dot off"></span>
+          <span id="status-text">未上班</span>
+        </div>
+        <div class="status-time" id="status-time">--:--</div>
+        <div class="status-date" id="status-date"></div>
+      </div>
+
+      <!-- Punch Button -->
+      <div class="punch-area">
+        <button id="punch-btn" class="punch-btn punch-in-btn">
+          <span class="punch-icon">📷</span>
+          <span class="punch-label">上班打卡</span>
+        </button>
+      </div>
+
+      <!-- Today's Summary -->
+      <div class="card today-card" id="today-card" style="display:none;">
+        <div class="card-title">今日汇总</div>
+        <div class="today-row">
+          <span class="today-label">上班时间</span>
+          <span class="today-value" id="today-in">--</span>
+        </div>
+        <div class="today-row">
+          <span class="today-label">已工作时长</span>
+          <span class="today-value highlight" id="today-duration">--</span>
+        </div>
+        <div class="today-row">
+          <span class="today-label">预计工资</span>
+          <span class="today-value highlight" id="today-earnings">--</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button class="action-btn" data-nav="history">📋 历史记录</button>
+        <button class="action-btn" data-nav="summary">📊 统计汇总</button>
+      </div>
+    </main>
+
+    <!-- Page: History -->
+    <main id="page-history" class="page">
+      <div class="month-filter" id="month-filter"></div>
+      <div class="list-container" id="history-list"></div>
+      <div class="empty-state" id="history-empty">暂无打卡记录</div>
+    </main>
+
+    <!-- Page: Summary -->
+    <main id="page-summary" class="page">
+      <div class="period-selector">
+        <button class="period-btn active" data-period="week">本周</button>
+        <button class="period-btn" data-period="month">本月</button>
+        <button class="period-btn" data-period="custom">自定义</button>
+      </div>
+      <div class="custom-range" id="custom-range" style="display:none;">
+        <input type="date" id="range-start">
+        <span>至</span>
+        <input type="date" id="range-end">
+      </div>
+      <div class="summary-cards" id="summary-cards"></div>
+      <div class="summary-chart" id="summary-chart"></div>
+      <button class="btn-primary export-btn" id="export-btn">📥 导出 Excel 报表</button>
+    </main>
+
+    <!-- Page: Settings -->
+    <main id="page-settings" class="page">
+      <div class="settings-group">
+        <div class="settings-label">个人信息</div>
+        <div class="settings-item">
+          <span>名称</span>
+          <input type="text" id="setting-name" placeholder="输入你的名字">
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">薪资设置</div>
+        <div class="settings-item">
+          <span>时薪 (元)</span>
+          <input type="number" id="setting-rate" placeholder="0" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">数据管理</div>
+        <button class="btn-danger" id="btn-clear-data">🗑 清除所有数据</button>
+      </div>
+      <div class="settings-footer">
+        <p>私人打卡 v1.0</p>
+        <p>所有数据仅存储在您的设备上</p>
+      </div>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav id="bottom-nav">
+      <button class="nav-btn active" data-nav="dashboard">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">打卡</span>
+      </button>
+      <button class="nav-btn" data-nav="history">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">记录</span>
+      </button>
+      <button class="nav-btn" data-nav="summary">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">统计</span>
+      </button>
+      <button class="nav-btn" data-nav="settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">设置</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Photo Preview Modal -->
+  <div class="modal" id="photo-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <img id="photo-modal-img" src="" alt="打卡照片">
+      <button class="modal-close">✕</button>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal" id="confirm-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-dialog">
+      <p id="confirm-msg"></p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="confirm-cancel">取消</button>
+        <button class="btn-primary" id="confirm-ok">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Hidden camera input -->
+  <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;">
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
