@@ -3,11 +3,23 @@
  * Stores work records and settings locally on device
  */
 
+// Check Dexie loaded
+if (typeof Dexie === 'undefined') {
+  alert('应用加载失败：缺少数据库组件。请检查网络连接后刷新页面。');
+  throw new Error('Dexie not loaded');
+}
+
 const db = new Dexie('PunchClockDB');
 
 db.version(1).stores({
   workRecords: '++id, date, timestamp',
   settings: 'key'
+});
+
+// Handle DB open errors
+db.open().catch(err => {
+  console.error('Failed to open database:', err);
+  alert('数据库打开失败，请尝试清除 Safari 网站数据后重试。');
 });
 
 // ===== Settings Operations =====

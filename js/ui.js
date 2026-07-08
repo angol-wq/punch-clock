@@ -190,75 +190,84 @@ async function refreshDashboard() {
 }
 
 async function handlePunchIn() {
-  // 1. Save record IMMEDIATELY (before photo) — prevents iOS camera reload from losing data
-  const now = new Date();
-  const rate = parseFloat(await getSetting('hourlyRate', 0));
+  try {
+    // 1. Save record IMMEDIATELY (before photo) — prevents iOS camera reload from losing data
+    const now = new Date();
+    const rate = parseFloat(await getSetting('hourlyRate', 0));
 
-  const id = await addRecord({
-    clockInTime: now.getTime(),
-    clockInPhoto: null,
-    hourlyRate: rate,
-    timestamp: now.getTime()
-  });
+    const id = await addRecord({
+      clockInTime: now.getTime(),
+      clockInPhoto: null,
+      hourlyRate: rate,
+      timestamp: now.getTime()
+    });
 
-  // 2. Refresh UI immediately so user sees "已上班"
-  showToast('✅ 上班打卡成功！');
-  refreshDashboard();
+    // 2. Refresh UI immediately so user sees "已上班"
+    await refreshDashboard();
+    showToast('✅ 上班打卡成功！');
 
-  // 3. Then ask for photo — if camera crashes the page, record is already saved
-  const wantPhoto = await showConfirm('是否需要拍摄上班照片？\n选择"取消"可以稍后再拍');
+    // 3. Then ask for photo — if camera crashes the page, record is already saved
+    const wantPhoto = await showConfirm('是否需要拍摄上班照片？\n选择"取消"可以稍后再拍');
 
-  if (wantPhoto) {
-    // Save pending photo intent so we can recover if page reloads
-    sessionStorage.setItem('pendingPhoto', JSON.stringify({ id, type: 'in' }));
-    try {
-      const photoData = await capturePhoto();
-      if (photoData && photoData.photo) {
-        await updateRecord(id, { clockInPhoto: photoData.photo });
-        showToast('📷 上班照片已保存');
+    if (wantPhoto) {
+      sessionStorage.setItem('pendingPhoto', JSON.stringify({ id, type: 'in' }));
+      try {
+        const photoData = await capturePhoto();
+        if (photoData && photoData.photo) {
+          await updateRecord(id, { clockInPhoto: photoData.photo });
+          showToast('📷 上班照片已保存');
+        }
+      } catch (e) {
+        showToast('照片已跳过，可稍后在记录中补拍');
       }
-    } catch (e) {
-      showToast('照片已跳过，可稍后在记录中补拍');
+      sessionStorage.removeItem('pendingPhoto');
+      await refreshDashboard();
     }
-    sessionStorage.removeItem('pendingPhoto');
-    refreshDashboard();
+  } catch (err) {
+    console.error('Punch in error:', err);
+    showToast('打卡失败，请重试');
   }
 }
 
 async function handlePunchOut() {
-  const activeRecord = await getActiveRecord();
-  if (!activeRecord) {
-    showToast('没有正在进行的上班记录');
-    return;
-  }
-
-  // 1. Save clock-out time IMMEDIATELY
-  const now = new Date();
-  await updateRecord(activeRecord.id, {
-    clockOutTime: now.getTime()
-  });
-
-  // 2. Refresh UI immediately
-  const elapsed = now.getTime() - new Date(activeRecord.clockInTime).getTime();
-  showToast(`✅ 下班打卡成功！工作时长 ${formatDuration(elapsed)}`);
-  refreshDashboard();
-
-  // 3. Then ask for photo
-  const wantPhoto = await showConfirm('是否需要拍摄下班照片？\n选择"取消"可以稍后再拍');
-
-  if (wantPhoto) {
-    sessionStorage.setItem('pendingPhoto', JSON.stringify({ id: activeRecord.id, type: 'out' }));
-    try {
-      const photoData = await capturePhoto();
-      if (photoData && photoData.photo) {
-        await updateRecord(activeRecord.id, { clockOutPhoto: photoData.photo });
-        showToast('📷 下班照片已保存');
-      }
-    } catch (e) {
-      showToast('照片已跳过，可稍后在记录中补拍');
+  try {
+    const activeRecord = await getActiveRecord();
+    if (!activeRecord) {
+      showToast('没有正在进行的上班记录');
+      return;
     }
-    sessionStorage.removeItem('pendingPhoto');
-    refreshDashboard();
+
+    // 1. Save clock-out time IMMEDIATELY
+    const now = new Date();
+    await updateRecord(activeRecord.id, {
+      clockOutTime: now.getTime()
+    });
+
+    // 2. Refresh UI immediately
+    const elapsed = now.getTime() - new Date(activeRecord.clockInTime).getTime();
+    await refreshDashboard();
+    showToast(`✅ 下班打卡成功！工作时长 ${formatDuration(elapsed)}`);
+
+    // 3. Then ask for photo
+    const wantPhoto = await showConfirm('是否需要拍摄下班照片？\n选择"取消"可以稍后再拍');
+
+    if (wantPhoto) {
+      sessionStorage.setItem('pendingPhoto', JSON.stringify({ id: activeRecord.id, type: 'out' }));
+      try {
+        const photoData = await capturePhoto();
+        if (photoData && photoData.photo) {
+          await updateRecord(activeRecord.id, { clockOutPhoto: photoData.photo });
+          showToast('📷 下班照片已保存');
+        }
+      } catch (e) {
+        showToast('照片已跳过，可稍后在记录中补拍');
+      }
+      sessionStorage.removeItem('pendingPhoto');
+      await refreshDashboard();
+    }
+  } catch (err) {
+    console.error('Punch out error:', err);
+    showToast('打卡失败，请重试');
   }
 }
 
