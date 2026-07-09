@@ -39,7 +39,7 @@ async function addRecord(record) {
     clockOutPhoto: record.clockOutPhoto || null,
     hourlyRate: record.hourlyRate || 0,
     notes: record.notes || '',
-    timestamp: (record.timestamp || new Date()).getTime()
+    timestamp: record.timestamp || new Date().getTime()
   });
 }
 
