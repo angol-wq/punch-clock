@@ -225,8 +225,22 @@ async function handlePunchIn() {
     }
   } catch (err) {
     console.error('Punch in error:', err);
-    showToast('打卡失败，请重试');
+    // Try localStorage fallback
+    try { fallbackPunchIn(); } catch(e) {}
+    showToast('打卡失败: ' + (err.message || err), 4000);
   }
+}
+
+// Emergency fallback if Dexie/IndexedDB fails
+function fallbackPunchIn() {
+  const now = new Date();
+  const records = JSON.parse(localStorage.getItem('punch_fallback') || '[]');
+  records.push({
+    clockInTime: now.getTime(),
+    clockOutTime: null,
+    date: formatDateStr(now)
+  });
+  localStorage.setItem('punch_fallback', JSON.stringify(records));
 }
 
 async function handlePunchOut() {
@@ -267,7 +281,7 @@ async function handlePunchOut() {
     }
   } catch (err) {
     console.error('Punch out error:', err);
-    showToast('打卡失败，请重试');
+    showToast('打卡失败: ' + (err.message || err), 4000);
   }
 }
 

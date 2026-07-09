@@ -63,6 +63,13 @@ function registerServiceWorker() {
 
 async function initApp() {
   try {
+    // Ensure Dexie DB is open before any operations
+    if (typeof db !== 'undefined') {
+      await db.open().catch(e => {
+        console.warn('DB open warning (may be already open):', e.message);
+      });
+    }
+
     // Run migration if needed
     await migrateFromLocalStorage();
 
